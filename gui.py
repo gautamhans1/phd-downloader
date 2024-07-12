@@ -34,9 +34,8 @@ class VideoDownloaderGUI:
 
         self.frame.grid_rowconfigure(0, weight=1)
         self.frame.grid_rowconfigure(1, weight=1)
-        self.frame.grid_rowconfigure(2, weight=1)
-        self.frame.grid_rowconfigure(3, weight=3)
-        self.frame.grid_rowconfigure(4, weight=5)
+        self.frame.grid_rowconfigure(2, weight=3)
+        self.frame.grid_rowconfigure(3, weight=5)
         self.frame.grid_columnconfigure(0, weight=1)
 
         self.default_download_path_label = ttk.Label(self.frame, text="Default Download Path:")
@@ -112,8 +111,6 @@ class VideoDownloaderGUI:
     def start_download(self):
         try:
             urls = [url.strip() for url in self.url_text.get("1.0", tk.END).splitlines() if url.strip()]
-            if not urls:
-                raise ValueError("No valid URLs provided.")
             download_path = self.default_download_path.get()
             self.download_video_func(urls, download_path, self.message_queue)
         except Exception as e:
