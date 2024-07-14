@@ -16,67 +16,53 @@ class VideoDownloaderGUI:
     def setup_ui(self):
         self.app.title("Video Downloader")
         self.app.geometry("800x600")
+        self.app.minsize(600, 400)
 
-        self.app.lift()
         self.app.grid_columnconfigure(0, weight=1)
         self.app.grid_rowconfigure(0, weight=1)
 
-        style = ttk.Style()
-        style.configure("TLabel", font=("Helvetica", 14), padding="0.5em")
-        style.configure("TEntry", font=("Helvetica", 14), padding="0.5em")
-        style.configure("TButton", font=("Helvetica", 14), padding="0.5em 1em")
-        style.configure("TText", font=("Helvetica", 14), padding="0.5em")
-        style.configure("TFrame", background="white", padding="1em")
-        style.configure("TLabelframe", background="white", padding="1em")
+        self.frame = ttk.Frame(self.app, padding="10")
+        self.frame.grid(row=0, column=0, sticky="nsew")
 
-        self.frame = ttk.Frame(self.app)
-        self.frame.grid(row=0, column=0, sticky="nsew", padx=20, pady=20)
-
-        self.frame.grid_rowconfigure(0, weight=1)
-        self.frame.grid_rowconfigure(1, weight=1)
-        self.frame.grid_rowconfigure(2, weight=3)
-        self.frame.grid_rowconfigure(3, weight=5)
         self.frame.grid_columnconfigure(0, weight=1)
+        self.frame.grid_rowconfigure(2, weight=1)
+        self.frame.grid_rowconfigure(4, weight=3)
 
-        self.default_download_path_label = ttk.Label(self.frame, text="Default Download Path:")
-        self.default_download_path_label.grid(row=0, column=0, sticky="w")
+        # Download Path
+        path_frame = ttk.Frame(self.frame)
+        path_frame.grid(row=0, column=0, sticky="ew", pady=(0, 10))
+        path_frame.grid_columnconfigure(1, weight=1)
 
-        self.default_download_path = ttk.Entry(self.frame, width=70)
+        ttk.Label(path_frame, text="Default Download Path:").grid(row=0, column=0, sticky="w", padx=(0, 5))
+        self.default_download_path = ttk.Entry(path_frame)
         self.default_download_path.insert(tk.END, os.path.expanduser("~/Downloads/jellyfin/phd/"))
-        self.default_download_path.grid(row=1, column=0, columnspan=3, sticky="ew")
+        self.default_download_path.grid(row=0, column=1, sticky="ew")
+        ttk.Button(path_frame, text="Browse", command=self.browse_download_path).grid(row=0, column=2, padx=5)
+        ttk.Button(path_frame, text="Open Download Path", command=self.open_download_path).grid(row=0, column=3)
 
-        self.browse_button = ttk.Button(self.frame, text="Browse", command=self.browse_download_path)
-        self.browse_button.grid(row=1, column=3, padx=5, pady=5)
-
-        self.open_button = ttk.Button(self.frame, text="Open Download Path", command=self.open_download_path)
-        self.open_button.grid(row=1, column=4, padx=5, pady=5)
-
-        self.url_label = ttk.Label(self.frame, text="Enter the video URL(s), each on a new line:")
-        self.url_label.grid(row=2, column=0, sticky="w")
-
+        # URL Input
+        ttk.Label(self.frame, text="Enter the video URL(s), each on a new line:").grid(row=1, column=0, sticky="w", pady=(10, 5))
         self.url_text = scrolledtext.ScrolledText(self.frame, height=5, wrap=tk.WORD)
-        self.url_text.grid(row=3, column=0, columnspan=5, sticky="nsew")
+        self.url_text.grid(row=2, column=0, sticky="nsew")
+        self.enable_text_widget_functions(self.url_text)
 
-        self.terminal_label = ttk.Label(self.frame, text="Terminal Output:")
-        self.terminal_label.grid(row=4, column=0, sticky="w")
-
+        # Terminal Output
+        ttk.Label(self.frame, text="Terminal Output:").grid(row=3, column=0, sticky="w", pady=(10, 5))
         self.terminal_text = scrolledtext.ScrolledText(self.frame, height=15, bg='black', fg='white', wrap=tk.WORD)
-        self.terminal_text.grid(row=5, column=0, columnspan=5, sticky="nsew")
+        self.terminal_text.grid(row=4, column=0, sticky="nsew")
         self.terminal_text.config(state=tk.DISABLED, font=("Courier", 12))
 
+        # Configure tags for different message levels
         self.terminal_text.tag_config('DEBUG', foreground='cyan')
         self.terminal_text.tag_config('WARNING', foreground='yellow')
         self.terminal_text.tag_config('ERROR', foreground='red')
         self.terminal_text.tag_config('CRITICAL', foreground='red', background='white')
 
-        self.button_frame = ttk.Frame(self.frame)
-        self.button_frame.grid(row=6, column=0, columnspan=5, pady=(10, 0))
-
-        self.download_button = ttk.Button(self.button_frame, text="Download", command=self.start_download)
-        self.download_button.pack(side=tk.LEFT, padx=(0, 10))
-
-        self.clear_button = ttk.Button(self.button_frame, text="Clear Logs", command=self.clear_terminal)
-        self.clear_button.pack(side=tk.LEFT, padx=(0, 10))
+        # Buttons
+        button_frame = ttk.Frame(self.frame)
+        button_frame.grid(row=5, column=0, pady=(10, 0), sticky="e")
+        ttk.Button(button_frame, text="Download", command=self.start_download).pack(side=tk.LEFT, padx=(0, 10))
+        ttk.Button(button_frame, text="Clear Logs", command=self.clear_terminal).pack(side=tk.LEFT)
 
     def append_to_terminal(self, message, level='INFO'):
         self.terminal_text.config(state=tk.NORMAL)
@@ -115,6 +101,16 @@ class VideoDownloaderGUI:
             self.download_video_func(urls, download_path, self.message_queue)
         except Exception as e:
             self.append_to_terminal(f"Error starting download: {e}", 'ERROR')
+            
+    def enable_text_widget_functions(self, widget):
+        widget.bind("<Button-3>", self.show_context_menu)
+        self.context_menu = tk.Menu(widget, tearoff=0)
+        self.context_menu.add_command(label="Cut", command=lambda: widget.event_generate("<<Cut>>"))
+        self.context_menu.add_command(label="Copy", command=lambda: widget.event_generate("<<Copy>>"))
+        self.context_menu.add_command(label="Paste", command=lambda: widget.event_generate("<<Paste>>"))
+
+    def show_context_menu(self, event):
+        self.context_menu.tk_popup(event.x_root, event.y_root)
 
     def process_messages(self):
         while not self.message_queue.empty():
